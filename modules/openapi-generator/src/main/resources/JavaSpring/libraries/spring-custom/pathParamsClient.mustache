@@ -1,0 +1,2 @@
+{{#isPathParam}}{{#useBeanValidation}}{{>beanValidationPathParams}}{{/useBeanValidation}}@PathVariable(name="{{paramName}}") {{#isCommonsValidation}}
+    @{{commonsValidationClass}}(message = "invalid data provided for field: {{paramName}}"){{/isCommonsValidation}}{{{dataType}}} {{paramName}}{{/isPathParam}}

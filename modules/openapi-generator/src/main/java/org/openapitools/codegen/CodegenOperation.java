@@ -25,13 +25,14 @@ import java.util.*;
 public class CodegenOperation {
     public final List<CodegenProperty> responseHeaders = new ArrayList<CodegenProperty>();
     public boolean hasAuthMethods, hasConsumes, hasProduces, hasParams, hasOptionalParams, hasRequiredParams,
-            returnTypeIsPrimitive, returnSimpleType, subresourceOperation, isMapContainer,
+            returnTypeIsPrimitive, returnSimpleType, subresourceOperation, isMapContainer, isQueryDslBinding, isReturnRequired,
             isListContainer, isMultipart, hasMore = true,
             isResponseBinary = false, isResponseFile = false, hasReference = false,
             isRestfulIndex, isRestfulShow, isRestfulCreate, isRestfulUpdate, isRestfulDestroy,
             isRestful, isDeprecated, isCallbackRequest;
-    public String path, operationId, returnType, httpMethod, returnBaseType,
-            returnContainer, summary, unescapedNotes, notes, baseName, defaultResponse;
+    public String path, httpMethodCaps, pathForDelegate, operationId, returnType, httpMethod, returnBaseType,
+            returnContainer, summary, unescapedNotes, notes, baseName, defaultResponse, queryDslBindingClass,
+            queryDslPredicateRootClass, payloadClass, payloadClassCollector, payloadClassCasting;
     public CodegenDiscriminator discriminator;
     public List<Map<String, String>> consumes, produces, prioritizedContentTypes;
     public List<CodegenServer> servers = new ArrayList<CodegenServer>();
@@ -59,6 +60,10 @@ public class CodegenOperation {
     public String operationIdLowerCase; // for markdown documentation
     public String operationIdCamelCase; // for class names
     public String operationIdSnakeCase;
+
+    public List<CodegenParameter> getAllParams() {
+        return allParams;
+    }
 
     /**
      * Check if there's at least one parameter
@@ -309,7 +314,16 @@ public class CodegenOperation {
             Objects.equals(prioritizedContentTypes, that.prioritizedContentTypes) &&
             Objects.equals(operationIdOriginal, that.operationIdOriginal) &&
             Objects.equals(operationIdLowerCase, that.operationIdLowerCase) &&
+                Objects.equals(queryDslBindingClass, that.queryDslBindingClass) &&
+                Objects.equals(payloadClass, that.payloadClass) &&
+                Objects.equals(payloadClassCollector, that.payloadClassCollector) &&
+                Objects.equals(payloadClassCasting, that.payloadClassCasting) &&
+                Objects.equals(queryDslPredicateRootClass, that.queryDslPredicateRootClass) &&
+                Objects.equals(path, that.path) &&
+                Objects.equals(pathForDelegate, that.pathForDelegate) &&
             Objects.equals(operationIdCamelCase, that.operationIdCamelCase);
+
+
     }
 
     @Override
@@ -370,7 +384,15 @@ public class CodegenOperation {
             prioritizedContentTypes,
             operationIdOriginal,
             operationIdLowerCase,
-            operationIdCamelCase);
+            operationIdCamelCase, queryDslBindingClass, payloadClass, payloadClassCollector, queryDslPredicateRootClass,
+                path, pathForDelegate
+
+                );
+
+
+
+
+
     }
 
 

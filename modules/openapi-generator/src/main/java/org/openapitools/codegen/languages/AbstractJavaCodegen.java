@@ -59,6 +59,7 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
     protected boolean withXml = false;
     protected String invokerPackage = "org.openapitools";
     protected String groupId = "org.openapitools";
+    private String commonsValidationClass;
     protected String artifactId = "openapi-java";
     protected String artifactVersion = "1.0.0";
     protected String artifactUrl = "https://github.com/openapitools/openapi-generator";
@@ -94,7 +95,7 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
         super();
         supportsInheritance = true;
         modelTemplateFiles.put("model.mustache", ".java");
-        apiTemplateFiles.put("api.mustache", ".java");
+//        apiTemplateFiles.put("api.mustache", ".java");
         apiTestTemplateFiles.put("api_test.mustache", ".java");
         modelDocTemplateFiles.put("model_doc.mustache", ".md");
         apiDocTemplateFiles.put("api_doc.mustache", ".md");
@@ -409,8 +410,8 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
         importMapping.put("JsonSerialize", "com.fasterxml.jackson.databind.annotation.JsonSerialize");
 
         // imports for pojos
-        importMapping.put("ApiModelProperty", "io.swagger.annotations.ApiModelProperty");
-        importMapping.put("ApiModel", "io.swagger.annotations.ApiModel");
+//        importMapping.put("ApiModelProperty", "io.swagger.annotations.ApiModelProperty");
+//        importMapping.put("ApiModel", "io.swagger.annotations.ApiModel");
         importMapping.put("BigDecimal", "java.math.BigDecimal");
         importMapping.put("JsonProperty", "com.fasterxml.jackson.annotation.JsonProperty");
         importMapping.put("JsonSubTypes", "com.fasterxml.jackson.annotation.JsonSubTypes");
@@ -427,6 +428,11 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
         importMapping.put("IOException", "java.io.IOException");
         importMapping.put("Objects", "java.util.Objects");
         importMapping.put("StringUtil", invokerPackage + ".StringUtil");
+        importMapping.put("Page", "org.springframework.data.domain.Page");
+        importMapping.put("PageImpl", "org.springframework.data.domain.PageImpl");
+        importMapping.put("Collectors", "java.util.stream.Collectors");
+        importMapping.put("BigDecimal", "java.math.BigDecimal");
+        importMapping.put("LocalDate", "java.time.LocalDate");
         // import JsonCreator if JsonProperty is imported
         // used later in recursive import in postProcessingModels
         importMapping.put("com.fasterxml.jackson.annotation.JsonProperty", "com.fasterxml.jackson.annotation.JsonCreator");
@@ -734,9 +740,9 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
         } else if (ModelUtils.isMapSchema(p)) {
             final String pattern;
             if (fullJavaUtil) {
-                pattern = "new java.util.HashMap<%s>()";
+                pattern = "new java.util.HashMap<String, %s>()";
             } else {
-                pattern = "new HashMap<%s>()";
+                pattern = "new HashMap<String, %s>()";
             }
             if (ModelUtils.getAdditionalProperties(p) == null) {
                 return null;
@@ -930,7 +936,7 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
         Map<String, Schema> allDefinitions = ModelUtils.getSchemas(this.openAPI);
         CodegenModel codegenModel = super.fromModel(name, model);
         if (codegenModel.description != null) {
-            codegenModel.imports.add("ApiModel");
+//            codegenModel.imports.add("ApiModel");
         }
         if (codegenModel.discriminator != null && additionalProperties.containsKey("jackson")) {
             codegenModel.imports.add("JsonSubTypes");
@@ -959,7 +965,22 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
                 model.imports.add("JsonSerialize");
             }
         }
-
+        property.commonsValidationClass = property.getCommonsValidation();
+        // In case different object is required other than swagger predefined objects,
+        // pass new reference here to override the one which was set in yml file.
+        String changeReference = property.getChangeReference();
+        if (changeReference != null) {
+            property.dataType = changeReference;
+            property.datatypeWithEnum = changeReference;
+            property.baseType = changeReference;
+            // exclude import in case change reference object is of type primitive byte array.
+            if (!changeReference.equals("byte[]")) {
+                model.imports.add(changeReference);
+            }
+        }
+        if (property.isCommonsValidation) {
+            model.imports.add(property.commonsValidationClass);
+        }
         if (!fullJavaUtil) {
             if ("array".equals(property.containerType)) {
                 model.imports.add("ArrayList");
@@ -970,8 +991,8 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
 
         if (!BooleanUtils.toBoolean(model.isEnum)) {
             // needed by all pojos, but not enums
-            model.imports.add("ApiModelProperty");
-            model.imports.add("ApiModel");
+//            model.imports.add("ApiModelProperty");
+//            model.imports.add("ApiModel");
         }
     }
 
@@ -1024,7 +1045,7 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
                     continue;
                 }
                 for (Operation operation : path.readOperations()) {
-                    LOGGER.info("Processing operation " + operation.getOperationId());
+//                    LOGGER.info("Processing operation " + operation.getOperationId());
                     if (hasBodyParameter(openAPI, operation) || hasFormParameter(openAPI, operation)) {
                         String defaultContentType = hasFormParameter(openAPI, operation) ? "application/x-www-form-urlencoded" : "application/json";
                         List<String> consumes = new ArrayList<>(getConsumesInfo(openAPI, operation));

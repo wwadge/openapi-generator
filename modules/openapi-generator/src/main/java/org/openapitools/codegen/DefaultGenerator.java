@@ -493,6 +493,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
                 // Special handling of aliases only applies to Java
                 if (modelTemplate != null && modelTemplate.containsKey("model")) {
                     CodegenModel m = (CodegenModel) modelTemplate.get("model");
+                    m.setCustomParameters();
                     if (m.isAlias) {
                         continue;  // Don't create user-defined classes for aliases
                     }
@@ -526,6 +527,8 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         if (!generateApis) {
             return;
         }
+        boolean generateClient = config.additionalProperties().get("clientName") != null;
+
         Map<String, List<CodegenOperation>> paths = processPaths(this.openAPI.getPaths());
         Set<String> apisToGenerate = null;
         String apiNames = GlobalSettings.getProperty("apis");
@@ -1122,6 +1125,48 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         return parameter.getName() + ":" + parameter.getIn();
     }
 
+    private void setPayloadClassAttributes(CodegenOperation operation){
+        Object enc = operation.vendorExtensions.get("x-payload-class");
+
+        // default is the List class.
+        operation.imports.add("Collectors");
+        if (enc == null) {
+            operation.payloadClassCollector = "Collectors.toList()";
+            operation.payloadClass = "List";
+            operation.payloadClassCasting = "(" + operation.payloadClass + ")";
+        }
+        else {
+            String clazz = enc.toString();
+            operation.payloadClass = clazz;
+            if ("Set".equals(clazz)) {
+                operation.payloadClassCollector = "Collectors.toSet()";
+                operation.payloadClassCasting = "(" + operation.payloadClass + ")";
+            }
+            else if ("Page".equals(clazz)) {
+                operation.imports.add("Page");
+                operation.imports.add("PageImpl");
+                operation.payloadClassCollector = "Collectors.toList())";
+                operation.payloadClassCasting = "new PageImpl((List)";
+            }
+            else {
+                operation.payloadClassCollector = "Collectors.toMap()";
+                operation.payloadClassCasting = "(" + operation.payloadClass + ")";
+            }
+        }
+    }
+
+    private String getQueryDslBinding(CodegenOperation operation){
+        Object enc = operation.vendorExtensions.get("x-querydsl-binding");
+
+        if (enc != null) {
+            operation.isQueryDslBinding = true;
+            String clazz = enc.toString();
+            operation.imports.add(clazz);
+            return clazz;
+        }
+        return null;
+    }
+
     private Map<String, Object> processOperations(CodegenConfig config, String tag, List<CodegenOperation> ops, List<Object> allModels) {
         Map<String, Object> operations = new HashMap<String, Object>();
         Map<String, Object> objs = new HashMap<String, Object>();
@@ -1132,6 +1177,54 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         Set<String> opIds = new HashSet<String>();
         int counter = 0;
         for (CodegenOperation op : ops) {
+            List<CodegenParameter> noClientParams = new ArrayList<>();
+            List<CodegenParameter> paramsToRemove = new ArrayList<>();
+            for (CodegenParameter parameter : op.getAllParams()) {
+                if (parameter.toIgnore()) {
+                    paramsToRemove.add(parameter);
+                }
+                parameter.isClientParam = parameter.isClientParam();
+                parameter.commonsValidationClass = parameter.getCommonsValidation();
+                if (parameter.isCommonsValidation) {
+                    op.imports.add(parameter.commonsValidationClass);
+                }
+                if (parameter.isEncryptedId) {
+                    op.imports.add("EntityId");
+                }
+
+                String changeReference = parameter.getChangeReference();
+                if (changeReference != null) {
+                    parameter.datatypeWithEnum = changeReference;
+                    parameter.dataType = changeReference;
+                    parameter.baseType = changeReference;
+                    op.imports.add(changeReference);
+                }
+            }
+
+            // filter out client params so that hasParams can work correctly in controller/delegate generation.
+            op.getAllParams().removeAll(paramsToRemove);
+
+            for (CodegenParameter parameter : op.getAllParams()) {
+                if (!parameter.isClientParam) {
+                    noClientParams.add(parameter);
+                }
+            }
+
+            op.hasParams = !noClientParams.isEmpty();
+
+            // check required in case we amended the parameters list and only one parameter is left
+            // for which hasMore has to be set to false in order not to break mustache file generation.
+            if (op.getAllParams().size() == 1) {
+                op.getAllParams().get(0).hasMore = false;
+            }
+
+            if (op.getAllParams() != null && op.getAllParams().size() > 0) {
+                op.getAllParams().get(op.getAllParams().size() - 1).hasMore = false;
+            }
+
+            setPayloadClassAttributes(op);
+            op.queryDslBindingClass = getQueryDslBinding(op);
+
             String opId = op.nickname;
             if (opIds.contains(opId)) {
                 counter++;
@@ -1154,6 +1247,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         for (String nextImport : allImports) {
             Map<String, String> im = new LinkedHashMap<String, String>();
             String mapping = config.importMapping().get(nextImport);
+//            LOGGER.info("nextImport = "+nextImport+", "+mapping);
             if (mapping == null) {
                 mapping = config.toModelImport(nextImport);
             }
@@ -1178,7 +1272,7 @@ public class DefaultGenerator extends AbstractGenerator implements Generator {
         config.postProcessOperationsWithModels(operations, allModels);
         if (objs.size() > 0) {
             List<CodegenOperation> os = (List<CodegenOperation>) objs.get("operation");
-
+            LOGGER.info("Operation = "+os.size() + ", " + os);
             if (os != null && os.size() > 0) {
                 CodegenOperation op = os.get(os.size() - 1);
                 op.hasMore = false;

@@ -26,15 +26,15 @@ import java.util.Objects;
 public class CodegenParameter {
     public boolean isFormParam, isQueryParam, isPathParam, isHeaderParam,
             isCookieParam, isBodyParam, hasMore, isContainer,
-            secondaryParam, isCollectionFormatMulti, isPrimitiveType, isModel;
+            secondaryParam, isCollectionFormatMulti, isPrimitiveType, isModel, toIgnore, isClientParam;
     public String baseName, paramName, dataType, datatypeWithEnum, dataFormat,
-            collectionFormat, description, unescapedDescription, baseType, defaultValue, enumName;
+            collectionFormat, description, unescapedDescription, baseType, defaultValue, enumName, commonsValidationClass;
 
     public String example; // example value (x-example)
     public String jsonSchema;
     public boolean isString, isNumeric, isInteger, isLong, isNumber, isFloat, isDouble, isByteArray, isBinary,
-            isBoolean, isDate, isDateTime, isUuid, isUri, isEmail, isFreeFormObject;
-    public boolean isListContainer, isMapContainer;
+            isBoolean, isDate, isDateTime, isUuid, isUri, isEmail, isFreeFormObject, isEncryptedId;
+    public boolean isListContainer, isMapContainer, isCommonsValidation;
     public boolean isFile;
     public boolean isEnum;
     public List<String> _enum;
@@ -138,6 +138,12 @@ public class CodegenParameter {
         output.defaultValue = this.defaultValue;
         output.example = this.example;
         output.isEnum = this.isEnum;
+        output.isEncryptedId = this.isEncryptedId;
+        output.isCommonsValidation = this.isCommonsValidation;
+        output.toIgnore = this.toIgnore;
+        output.isClientParam = this.isClientParam;
+        output.commonsValidationClass = this.commonsValidationClass;
+
         if (this._enum != null) {
             output._enum = new ArrayList<String>(this._enum);
         }
@@ -247,7 +253,12 @@ public class CodegenParameter {
             Objects.equals(maxItems, that.maxItems) &&
             Objects.equals(minItems, that.minItems) &&
             Objects.equals(uniqueItems, that.uniqueItems) &&
-            Objects.equals(multipleOf, that.multipleOf);
+            Objects.equals(multipleOf, that.multipleOf) &&
+            Objects.equals(isListContainer, that.isListContainer) &&
+            Objects.equals(isEncryptedId, that.isEncryptedId) &&
+            Objects.equals(isCommonsValidation, that.isCommonsValidation) &&
+            Objects.equals(toIgnore, that.toIgnore) &&
+            Objects.equals(isClientParam, that.isClientParam);
     }
 
     @Override
@@ -315,6 +326,10 @@ public class CodegenParameter {
             pattern,
             maxItems,
             minItems,
+                isEncryptedId,
+isCommonsValidation,
+toIgnore,
+        isClientParam,
             uniqueItems,
             multipleOf);
     }
@@ -387,6 +402,27 @@ public class CodegenParameter {
                 ", uniqueItems=" + uniqueItems +
                 ", multipleOf=" + multipleOf +
                 '}';
+    }
+
+    public boolean toIgnore(){
+        Object enc = vendorExtensions.get("x-ignore-param");
+        return (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+    }
+
+    public boolean isClientParam(){
+        Object enc = vendorExtensions.get("x-client-param");
+        return (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+    }
+
+    public String getCommonsValidation(){
+        Object enc = vendorExtensions.get("x-validation-class");
+        this.isCommonsValidation = enc != null;
+        return isCommonsValidation ?  enc.toString() : null;
+    }
+
+    public String getChangeReference(){
+        Object enc = vendorExtensions.get("x-change-reference");
+        return enc == null ? null : enc.toString();
     }
 }
 

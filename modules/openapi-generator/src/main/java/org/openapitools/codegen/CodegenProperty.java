@@ -49,14 +49,15 @@ public class CodegenProperty implements Cloneable {
     public String jsonSchema;
     public String minimum;
     public String maximum;
+    public String commonsValidationClass;
     public boolean exclusiveMinimum;
     public boolean exclusiveMaximum;
     public boolean hasMore, required, secondaryParam;
     public boolean hasMoreNonReadOnly; // for model constructor, true if next property is not readonly
     public boolean isPrimitiveType, isModel, isContainer;
     public boolean isString, isNumeric, isInteger, isLong, isNumber, isFloat, isDouble, isByteArray, isBinary, isFile,
-            isBoolean, isDate, isDateTime, isUuid, isUri, isEmail, isFreeFormObject;
-    public boolean isListContainer, isMapContainer;
+            isBoolean, isDate, isDateTime, isUuid, isUri, isEmail, isFreeFormObject, toIgnore, isClientParam, isEncryptedId;
+    public boolean isListContainer, isMapContainer, isCommonsValidation;
     public boolean isEnum;
     public boolean isReadOnly;
     public boolean isWriteOnly;
@@ -681,5 +682,25 @@ public class CodegenProperty implements Cloneable {
                 '}';
     }
 
+    public boolean toIgnore(){
+        Object enc = vendorExtensions.get("x-ignore-param");
+        return (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+    }
+
+    public boolean isClientParam(){
+        Object enc = vendorExtensions.get("x-client-param");
+        return (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+    }
+
+    public String getCommonsValidation(){
+        Object enc = vendorExtensions.get("x-validation-class");
+        this.isCommonsValidation = enc != null;
+        return isCommonsValidation ?  enc.toString() : null;
+    }
+
+    public String getChangeReference(){
+        Object enc = vendorExtensions.get("x-change-reference");
+        return enc == null ? null : enc.toString();
+    }
 
 }

@@ -62,8 +62,11 @@ public class SpringCodegen extends AbstractJavaCodegen
     public static final String SPRING_MVC_LIBRARY = "spring-mvc";
     public static final String SPRING_BOOT = "spring-boot";
     public static final String SPRING_CLOUD_LIBRARY = "spring-cloud";
+    public static final String SPRING_CUSTOM = "spring-custom";
     public static final String IMPLICIT_HEADERS = "implicitHeaders";
     public static final String OPENAPI_DOCKET_CONFIG = "swaggerDocketConfig";
+    public static final String CLIENT_NAME = "clientName";
+
     public static final String API_FIRST = "apiFirst";
     public static final String HATEOAS = "hateoas";
     public static final String RETURN_SUCCESS_CODE = "returnSuccessCode";
@@ -73,6 +76,7 @@ public class SpringCodegen extends AbstractJavaCodegen
     public static final String CLOSE_BRACE = "}";
 
     protected String title = "OpenAPI Spring";
+    protected String clientName = null;
     protected String configPackage = "org.openapitools.configuration";
     protected String basePackage = "org.openapitools";
     protected boolean interfaceOnly = false;
@@ -145,6 +149,7 @@ public class SpringCodegen extends AbstractJavaCodegen
         supportedLibraries.put(SPRING_BOOT, "Spring-boot Server application using the SpringFox integration.");
         supportedLibraries.put(SPRING_MVC_LIBRARY, "Spring-MVC Server application using the SpringFox integration.");
         supportedLibraries.put(SPRING_CLOUD_LIBRARY, "Spring-Cloud-Feign client with Spring-Boot auto-configured settings.");
+        supportedLibraries.put(SPRING_CUSTOM, "Spring-Cloud customized with querydsl etc");
         setLibrary(SPRING_BOOT);
         CliOption library = new CliOption(CodegenConstants.LIBRARY, CodegenConstants.LIBRARY_DESC).defaultValue(SPRING_BOOT);
         library.setEnum(supportedLibraries);
@@ -165,6 +170,34 @@ public class SpringCodegen extends AbstractJavaCodegen
     }
 
     @Override
+    public void postProcessParameter(CodegenParameter parameter) {
+
+        if (hasEncryptedId(parameter)){
+            parameter.dataType = "EntityId";
+            parameter.isEncryptedId = true;
+        }
+    }
+
+    private boolean hasEncryptedId(CodegenParameter parameter){
+        Object enc = parameter.vendorExtensions.get("x-encrypted-id");
+        return (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+    }
+
+    private String getQueryDslPredicateRootClass(CodegenOperation operation){
+        Object enc = operation.vendorExtensions.get("x-querydsl-predicate-root-class");
+
+        // default would be the return type class.
+        if (enc == null) {
+            return operation.returnType;
+        }
+        else {
+            // overriding listContainer to true irrespective if we are returning
+            // list or not in order to force codegen to generate operation with predicate, pageable and sort params.
+            operation.isListContainer = true;
+            return enc.toString();
+        }
+    }
+    @Override
     public String getName() {
         return "spring";
     }
@@ -173,6 +206,7 @@ public class SpringCodegen extends AbstractJavaCodegen
     public String getHelp() {
         return "Generates a Java SpringBoot Server application using the SpringFox integration.";
     }
+    public void setClientName(String clientName) { this.clientName = clientName; }
 
     @Override
     public void processOpts() {
@@ -252,6 +286,10 @@ public class SpringCodegen extends AbstractJavaCodegen
             convertPropertyToBooleanAndWriteBack(ASYNC);
         }
 
+        if (additionalProperties.containsKey(CLIENT_NAME)) {
+            this.setClientName((String) additionalProperties.get(CLIENT_NAME));
+        }
+
         if (additionalProperties.containsKey(REACTIVE)) {
             if (!SPRING_BOOT.equals(library)) {
                 throw new IllegalArgumentException("Currently, reactive option is only supported with Spring-boot");
@@ -325,15 +363,15 @@ public class SpringCodegen extends AbstractJavaCodegen
             }
         }
 
-        supportingFiles.add(new SupportingFile("pom.mustache", "", "pom.xml"));
-        supportingFiles.add(new SupportingFile("README.mustache", "", "README.md"));
+//        supportingFiles.add(new SupportingFile("pom.mustache", "", "pom.xml"));
+//        supportingFiles.add(new SupportingFile("README.mustache", "", "README.md"));
 
         if (!this.interfaceOnly) {
             if (library.equals(SPRING_BOOT)) {
-                supportingFiles.add(new SupportingFile("openapi2SpringBoot.mustache",
-                        (sourceFolder + File.separator + basePackage).replace(".", java.io.File.separator), "OpenAPI2SpringBoot.java"));
-                supportingFiles.add(new SupportingFile("RFC3339DateFormat.mustache",
-                        (sourceFolder + File.separator + basePackage).replace(".", java.io.File.separator), "RFC3339DateFormat.java"));
+//                supportingFiles.add(new SupportingFile("openapi2SpringBoot.mustache",
+//                        (sourceFolder + File.separator + basePackage).replace(".", java.io.File.separator), "OpenAPI2SpringBoot.java"));
+//                supportingFiles.add(new SupportingFile("RFC3339DateFormat.mustache",
+//                        (sourceFolder + File.separator + basePackage).replace(".", java.io.File.separator), "RFC3339DateFormat.java"));
             }
             if (library.equals(SPRING_MVC_LIBRARY)) {
                 supportingFiles.add(new SupportingFile("webApplication.mustache",
@@ -356,32 +394,39 @@ public class SpringCodegen extends AbstractJavaCodegen
                     this.setSingleContentTypes(true);
                 }
             } else {
-                apiTemplateFiles.put("apiController.mustache", "Controller.java");
-                supportingFiles.add(new SupportingFile("application.mustache",
-                        ("src.main.resources").replace(".", java.io.File.separator), "application.properties"));
-                supportingFiles.add(new SupportingFile("homeController.mustache",
-                        (sourceFolder + File.separator + configPackage).replace(".", java.io.File.separator), "HomeController.java"));
+                if (this.clientName == null ) {
+                    apiTemplateFiles.put("apiController.mustache", "Controller.java");
+                }
+//                supportingFiles.add(new SupportingFile("application.mustache",
+//                        ("src.main.resources").replace(".", java.io.File.separator), "application.properties"));
+//                supportingFiles.add(new SupportingFile("homeController.mustache",
+//                        (sourceFolder + File.separator + configPackage).replace(".", java.io.File.separator), "HomeController.java"));
                 if (!this.reactive && !this.apiFirst) {
-                    supportingFiles.add(new SupportingFile("openapiDocumentationConfig.mustache",
-                            (sourceFolder + File.separator + configPackage).replace(".", java.io.File.separator), "OpenAPIDocumentationConfig.java"));
+//                    supportingFiles.add(new SupportingFile("openapiDocumentationConfig.mustache",
+//                            (sourceFolder + File.separator + configPackage).replace(".", java.io.File.separator), "OpenAPIDocumentationConfig.java"));
                 } else {
                     supportingFiles.add(new SupportingFile("openapi.mustache",
                             ("src/main/resources").replace("/", java.io.File.separator), "openapi.yaml"));
                 }
             }
         } else if (this.openapiDocketConfig && !library.equals(SPRING_CLOUD_LIBRARY) && !this.reactive && !this.apiFirst) {
-            supportingFiles.add(new SupportingFile("openapiDocumentationConfig.mustache",
-                    (sourceFolder + File.separator + configPackage).replace(".", java.io.File.separator), "OpenAPIDocumentationConfig.java"));
+//            supportingFiles.add(new SupportingFile("openapiDocumentationConfig.mustache",
+//                    (sourceFolder + File.separator + configPackage).replace(".", java.io.File.separator), "OpenAPIDocumentationConfig.java"));
         }
 
         if (!SPRING_CLOUD_LIBRARY.equals(library)) {
-            supportingFiles.add(new SupportingFile("apiUtil.mustache",
-                    (sourceFolder + File.separator + apiPackage).replace(".", java.io.File.separator), "ApiUtil.java"));
+//            supportingFiles.add(new SupportingFile("apiUtil.mustache",
+//                    (sourceFolder + File.separator + apiPackage).replace(".", java.io.File.separator), "ApiUtil.java"));
         }
 
         if (this.apiFirst) {
             apiTemplateFiles.clear();
             modelTemplateFiles.clear();
+        }
+
+        if (this.clientName != null) {
+            additionalProperties.put("clientUrl", "${" + clientName + "}");
+            apiTemplateFiles.put("apiClient.mustache", "Client.java");
         }
 
         if ("threetenbp".equals(dateLibrary)) {
@@ -400,11 +445,18 @@ public class SpringCodegen extends AbstractJavaCodegen
 
         if (this.delegatePattern && !this.delegateMethod) {
             additionalProperties.put("isDelegate", "true");
-            apiTemplateFiles.put("apiDelegate.mustache", "Delegate.java");
+            if (this.clientName == null) {
+                apiTemplateFiles.put("apiDelegate.mustache", "Delegate.java");
+            }
         }
 
 
         if (this.java8) {
+            typeMapping.put("date", "LocalDate");
+            typeMapping.put("DateTime", "OffsetDateTime");
+            importMapping.put("LocalDate", "java.time.LocalDate");
+            importMapping.put("OffsetDateTime", "java.time.OffsetDateTime");
+
             additionalProperties.put("javaVersion", "1.8");
             if (SPRING_CLOUD_LIBRARY.equals(library)) {
                 additionalProperties.put("jdk8-default-interface", false);
@@ -551,50 +603,65 @@ public class SpringCodegen extends AbstractJavaCodegen
     @Override
     public Map<String, Object> postProcessOperationsWithModels(Map<String, Object> objs, List<Object> allModels) {
         Map<String, Object> operations = (Map<String, Object>) objs.get("operations");
+//        LOGGER.info("Operations = "+operations.size());
+//        LOGGER.info("Operations = "+operations);
         if (operations != null) {
             List<CodegenOperation> ops = (List<CodegenOperation>) operations.get("operation");
-            for (final CodegenOperation operation : ops) {
+            for (CodegenOperation operation : ops) {
                 List<CodegenResponse> responses = operation.responses;
                 if (responses != null) {
-                    for (final CodegenResponse resp : responses) {
+                    for (CodegenResponse resp : responses) {
                         if ("0".equals(resp.code)) {
                             resp.code = "200";
                         }
-                        doDataTypeAssignment(resp.dataType, new DataTypeAssigner() {
-                            @Override
-                            public void setReturnType(final String returnType) {
-                                resp.dataType = returnType;
-                            }
-
-                            @Override
-                            public void setReturnContainer(final String returnContainer) {
-                                resp.containerType = returnContainer;
-                            }
-                        });
                     }
                 }
 
-                doDataTypeAssignment(operation.returnType, new DataTypeAssigner() {
-
-                    @Override
-                    public void setReturnType(final String returnType) {
-                        operation.returnType = returnType;
+                if (operation.returnType == null) {
+                    if (operation.isRestfulCreate()) {
+                        operation.returnType = "Void";
+                        operation.isReturnRequired = true;
                     }
-
-                    @Override
-                    public void setReturnContainer(final String returnContainer) {
-                        operation.returnContainer = returnContainer;
+                    else {
+                        operation.returnType = "void";
                     }
-                });
+                } else {
+                    operation.isReturnRequired = true;
+                    if (operation.returnType.startsWith("List")) {
+                        String rt = operation.returnType;
+                        int end = rt.lastIndexOf(">");
+                        if (end > 0) {
+                            operation.returnType = rt.substring("List<".length(), end).trim();
+                            operation.returnContainer = "List";
+                        }
+                    } else if (operation.returnType.startsWith("Map")) {
+                        String rt = operation.returnType;
+                        int end = rt.lastIndexOf(">");
+                        if (end > 0) {
+                            operation.returnType = rt.substring("Map<".length(), end).split(",")[1].trim();
+                            operation.returnContainer = "Map";
+                        }
+                    } else if (operation.returnType.startsWith("Set")) {
+                        String rt = operation.returnType;
+                        int end = rt.lastIndexOf(">");
+                        if (end > 0) {
+                            operation.returnType = rt.substring("Set<".length(), end).trim();
+                            operation.returnContainer = "Set";
+                        }
+                    }
+                }
 
-                if (implicitHeaders) {
+                if(implicitHeaders){
                     removeHeadersFromAllParams(operation.allParams);
                 }
+
+                operation.queryDslPredicateRootClass = getQueryDslPredicateRootClass(operation);
             }
         }
 
         return objs;
     }
+
 
     private interface DataTypeAssigner {
         void setReturnType(String returnType);

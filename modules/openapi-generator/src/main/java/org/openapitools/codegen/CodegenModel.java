@@ -45,6 +45,8 @@ public class CodegenModel {
     public CodegenDiscriminator discriminator;
     public String defaultValue;
     public String arrayModelType;
+    public String extendsClass, genericClass;
+    public boolean isInterface, isGetterSetter;
     public boolean isAlias; // Is this effectively an alias of another simple type
     public boolean isString, isInteger, isLong, isNumber, isNumeric, isFloat, isDouble;
     public List<CodegenProperty> vars = new ArrayList<CodegenProperty>(); // all properties (without parent's properties)
@@ -584,6 +586,22 @@ public class CodegenModel {
         }
     }
 
+    void setCustomParameters(){
+        if (vendorExtensions != null) {
+            Object enc = vendorExtensions.get("x-interface-type");
+            isInterface = (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+
+            enc = vendorExtensions.get("x-getter-setter");
+            isGetterSetter = (enc != null && enc.toString().equalsIgnoreCase("TRUE"));
+
+            enc = vendorExtensions.get("x-extends-class");
+            extendsClass = enc == null ? null : enc.toString();
+
+            enc = vendorExtensions.get("x-generic-class");
+            genericClass = enc == null ? null : enc.toString();
+        }
+
+    }
     /**
      * Remove self reference import
      */

@@ -381,7 +381,7 @@ public class JavaClientCodegen extends AbstractJavaCodegen
                 supportingFiles.add(new SupportingFile("GsonObjectMapper.mustache", invokerFolder, "GsonObjectMapper.java"));
             }
             additionalProperties.put("convert", new CaseFormatLambda(LOWER_CAMEL, UPPER_UNDERSCORE));
-            apiTemplateFiles.put("api.mustache", ".java");
+//            apiTemplateFiles.put("api.mustache", ".java");
             supportingFiles.add(new SupportingFile("ResponseSpecBuilders.mustache", invokerFolder, "ResponseSpecBuilders.java"));
         } else {
             LOGGER.error("Unknown library option (-l/--library): " + getLibrary());
