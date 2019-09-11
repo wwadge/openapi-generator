@@ -645,7 +645,6 @@ public abstract class AbstractJavaCodegen extends DefaultCodegen implements Code
     public String toModelName(final String name) {
         // We need to check if import-mapping has a different model for this class, so we use it
         // instead of the auto-generated one.
-        LOGGER.info(name);
         if (importMapping.containsKey(name)) {
             return importMapping.get(name);
         }
