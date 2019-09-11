@@ -2,8 +2,8 @@
  * {{#description}}{{.}}{{/description}}{{^description}}{{classname}}{{/description}}
  */
 {{^isInterface}}
-@QueryEntity
-@EqualsAndHashCode(callSuper=false){{#hasVars}} @ToString
+@QueryEntity @Data
+@EqualsAndHashCode(callSuper=false){{#hasVars}}
 @NoArgsConstructor{{/hasVars}}
 @AllArgsConstructor
 {{/isInterface}}
@@ -32,13 +32,23 @@ public {{#isInterface}}interface{{/isInterface}}{{^isInterface}}class{{/isInterf
   {{/gson}}
   {{^isGetterSetter}}
   /** {{#description}} {{{description}}} {{/description}} **/{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}
-  {{#isReadOnly}}@Getter{{/isReadOnly}}{{#isWriteOnly}}@Setter{{/isWriteOnly}}
-  {{^isReadOnly}}{{^isWriteOnly}}@Data{{/isWriteOnly}}{{/isReadOnly}}
   private {{{datatypeWithEnum}}} {{name}};
   {{/isGetterSetter}}
   {{#isGetterSetter}}
   void set{{datatypeWithEnum}}({{datatypeWithEnum}} {{name}});
   {{datatypeWithEnum}} get{{datatypeWithEnum}}();
   {{/isGetterSetter}}
+  {{#isReadOnly}} @JsonIgnore
+  public {{datatypeWithEnum}} {{getter}}() {
+      return {{name}};
+  }
+  {{/isReadOnly}}
+    {{#isWriteOnly}}
+    @JsonIgnore
+    public void {{setter}}({{{datatypeWithEnum}}} {{name}}) {
+        this.{{name}} = {{name}};
+    }
+    {{/isWriteOnly}}
+    {{^isReadOnly}}{{^isWriteOnly}}@Getter @Setter{{/isWriteOnly}}{{/isReadOnly}}
   {{/vars}}
 }
