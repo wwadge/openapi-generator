@@ -38,17 +38,16 @@ public {{#isInterface}}interface{{/isInterface}}{{^isInterface}}class{{/isInterf
   void set{{datatypeWithEnum}}({{datatypeWithEnum}} {{name}});
   {{datatypeWithEnum}} get{{datatypeWithEnum}}();
   {{/isGetterSetter}}
-  {{#isReadOnly}} @JsonIgnore
+  {{#isWriteOnly}} @JsonIgnore
   public {{datatypeWithEnum}} {{getter}}() {
       return {{name}};
   }
-  {{/isReadOnly}}
-    {{#isWriteOnly}}
+  {{/isWriteOnly}}
+    {{#isReadOnly}}
     @JsonIgnore
     public void {{setter}}({{{datatypeWithEnum}}} {{name}}) {
         this.{{name}} = {{name}};
     }
-    {{/isWriteOnly}}
-    {{^isReadOnly}}{{^isWriteOnly}}@Getter @Setter{{/isWriteOnly}}{{/isReadOnly}}
+    {{/isReadOnly}}
   {{/vars}}
 }
