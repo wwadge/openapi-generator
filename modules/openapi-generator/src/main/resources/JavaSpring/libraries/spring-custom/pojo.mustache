@@ -3,7 +3,7 @@
  */
 {{^isInterface}}
 @QueryEntity
-@Data @EqualsAndHashCode(callSuper=false){{#hasVars}}
+@EqualsAndHashCode(callSuper=false){{#hasVars}} @ToString
 @NoArgsConstructor{{/hasVars}}
 @AllArgsConstructor
 {{/isInterface}}
@@ -32,6 +32,8 @@ public {{#isInterface}}interface{{/isInterface}}{{^isInterface}}class{{/isInterf
   {{/gson}}
   {{^isGetterSetter}}
   /** {{#description}} {{{description}}} {{/description}} **/{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}
+  {{#isReadOnly}}@Getter{{/isReadOnly}}{{#isWriteOnly}}@Setter{{/isWriteOnly}}
+  {{^isReadOnly}}{{^isWriteOnly}}@Data{{/isWriteOnly}}{{/isReadOnly}}
   private {{{datatypeWithEnum}}} {{name}};
   {{/isGetterSetter}}
   {{#isGetterSetter}}
