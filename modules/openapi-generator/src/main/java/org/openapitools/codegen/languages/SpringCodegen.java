@@ -740,7 +740,7 @@ public class SpringCodegen extends AbstractJavaCodegen
         if (name.length() == 0) {
             return "DefaultApi";
         }
-        name = sanitizeName(name);
+//        name = sanitizeName(name);
         return camelize(name) + "Api";
     }
 
