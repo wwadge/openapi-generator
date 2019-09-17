@@ -41,7 +41,8 @@ public {{#isInterface}}interface{{/isInterface}}{{^isInterface}}class{{/isInterf
   {{/vars}}
 
   {{#vars}}
-  {{#isWriteOnly}} @JsonIgnore // via swagger config
+  {{#isWriteOnly}}
+  @JsonIgnore // via swagger config
   public {{datatypeWithEnum}} {{getter}}() {
       return {{name}};
   }
