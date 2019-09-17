@@ -38,16 +38,20 @@ public {{#isInterface}}interface{{/isInterface}}{{^isInterface}}class{{/isInterf
   void set{{datatypeWithEnum}}({{datatypeWithEnum}} {{name}});
   {{datatypeWithEnum}} get{{datatypeWithEnum}}();
   {{/isGetterSetter}}
-  {{#isWriteOnly}} @JsonIgnore
+  {{/vars}}
+
+  {{#vars}}
+  {{#isWriteOnly}} @JsonIgnore // via swagger config
   public {{datatypeWithEnum}} {{getter}}() {
       return {{name}};
   }
   {{/isWriteOnly}}
-    {{#isReadOnly}}
-    @JsonIgnore
-    public void {{setter}}({{{datatypeWithEnum}}} {{name}}) {
-        this.{{name}} = {{name}};
-    }
-    {{/isReadOnly}}
+  {{#isReadOnly}}
+  @JsonIgnore
+  public void {{setter}}({{{datatypeWithEnum}}} {{name}}) {
+      this.{{name}} = {{name}};
+  }
+  {{/isReadOnly}}
   {{/vars}}
+
 }
