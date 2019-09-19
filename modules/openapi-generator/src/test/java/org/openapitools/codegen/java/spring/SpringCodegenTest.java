@@ -156,10 +156,12 @@ public class SpringCodegenTest {
         SpringCodegen codegen = new SpringCodegen();
         codegen.setOutputDir(output.getAbsolutePath());
         codegen.additionalProperties().put(CXFServerFeatures.LOAD_TEST_DATA_FROM_FILE, "true");
+        codegen.additionalProperties().put(CodegenConstants.LIBRARY, "spring-custom");
 
         ClientOptInput input = new ClientOptInput();
         input.setOpenAPI(openAPI);
         input.setConfig(codegen);
+
 
         MockDefaultGenerator generator = new MockDefaultGenerator();
         generator.opts(input).generate();
